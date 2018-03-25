@@ -69,7 +69,6 @@ class DIWAE(nn.Module):
         log_q_z_x = log_likelihood_samples_mean_sigma(Z, mu, logvar, dim=2)
         log_p_z   = prior_z(Z, dim=2)
 
-
         log_ws              = log_p_x_z - log_q_z_x + log_p_z
         #log_ws_minus_max    = log_ws - torch.max(log_ws, dim=1, keepdim=True)[0]
         #ws                  = torch.exp(log_ws_minus_max)
@@ -111,7 +110,7 @@ class DIWAE(nn.Module):
             self.dec_layer1 = nn.Sequential(
                 nn.Linear(self.z_dim, self.z_dim*2),
                 nn.BatchNorm1d(self.z_dim*2),
-                nn.ReLU(),
+                nn.Tanh(),
             )
 
             self.dec_layer2 = nn.Sequential(
@@ -151,7 +150,8 @@ class DIWAE(nn.Module):
                 nn.ReLU(),
                 nn.Linear(self.z_dim*2, self.z_dim*2),
                 nn.BatchNorm1d(self.z_dim*2),
-                nn.ReLU(),
+                nn.Tanh()
+                #nn.ReLU(),
             )
 
             self.mu_fc = nn.Sequential(

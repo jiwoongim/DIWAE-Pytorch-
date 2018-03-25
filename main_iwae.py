@@ -50,9 +50,8 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 recon_batch, mu, logvar, Z = model(x_)
                 loss, _ = model.loss_function(recon_batch, x_, Z, mu, logvar)
                 train_hist['tr_loss'].append(loss.data[0])
-
                 loss.backward()
-
+                                          
                 # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
                 torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
                 optimizer.step()
@@ -176,10 +175,10 @@ def parse_args():
                         help="'conv' | 'fc'")
     parser.add_argument('--num_sam', type=float, default=5)
     parser.add_argument('--z_dim', type=float, default=64)
-    parser.add_argument('--lr', type=float, default=3e-5)
+    parser.add_argument('--lr', type=float, default=5e-5)
     parser.add_argument('--beta1', type=float, default=0.9)
     parser.add_argument('--beta2', type=float, default=0.999)
-    parser.add_argument('--clip', type=float, default=5.0)
+    parser.add_argument('--clip', type=float, default=1.0)
     parser.add_argument('--gpu_mode', type=bool, default=True)
 
     return check_args(parser.parse_args())
