@@ -48,7 +48,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 optimizer.zero_grad()
 
                 recon_batch, mu, logvar, Z = model(x_)
-                loss = model.loss_function(recon_batch, x_, Z, mu, logvar)
+                loss, _ = model.loss_function(recon_batch, x_, Z, mu, logvar)
                 train_hist['tr_loss'].append(loss.data[0])
 
                 loss.backward()
@@ -71,17 +71,18 @@ def train(model, args, data_loader_tr, data_loader_vl):
                     x_ = Variable(x_)
 
                 recon_batch, mu, logvar, z = model(x_)
-                loss = model.loss_function(recon_batch, x_, z, mu, logvar)
+                lle, elbo = model.loss_function(recon_batch, x_, z, mu, logvar)
                 train_hist['vl_loss'].append(loss.data[0])
 
 
                 if ((iter + 1) % 100) == 0:
-                    print("Epoch: [%2d] [%4d/%4d] Train loss: %.8f Valid loss %.8f" %
+                    print("Epoch: [%2d] [%4d/%4d] Train loss: %.8f Valid lle (loss) %.8f  Elbo %.8f" %
                             ((epoch + 1), \
                             (iter + 1), \
                             len(data_loader_vl.dataset) // args.batch_size, \
                             np.mean(train_hist['tr_loss'][:-100]),\
-                            loss.data[0]))
+                            lle.data[0],\
+                            elbo.data[0]))
 
         if epoch % 25 :
             save(model, epoch, args.save_dir, args.dataset, \
