@@ -29,7 +29,7 @@ class DIWAE(nn.Module):
         self.gpu_mode = args.gpu_mode
         self.model_name = args.model_type
         self.z_dim = args.z_dim
-        self.dim_sam= args.dim_sam
+        self.num_sam= args.num_sam
         self.arch_type = args.arch_type
 
         # networks init
@@ -50,12 +50,13 @@ class DIWAE(nn.Module):
             self.sample_z_ = Variable(torch.randn((self.batch_size, 1, self.z_dim)), volatile=True)
 
 
-    def elbo(self, recon_x, x, Z, mu, logvar):
+    def elbo(self, recon_x, x, mu, logvar):
 
-        N, M = x.shape[0:2]
+        N, M, C, iw, ih = recon_x.shape
+        recon_x = recon_x.view([N*M,C,iw,ih])
         BCE = self.reconstruction_function(recon_x, x) / (N*M)
         KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
-        KLD = torch.mean(torch.sum(KLD_element, dim=1).mul_(-0.5), dim=0)
+        KLD = torch.mean(torch.sum(KLD_element, dim=2).mul_(-0.5))
 
         return BCE + KLD
 
@@ -79,9 +80,9 @@ class DIWAE(nn.Module):
     def loss_function(self, recon_x, x, Z, mu, logvar):
 
         N, C, iw, ih = x.shape
-        x_tile = x.repeat(self.dim_sam,1,1,1,1).permute(1,0,2,3,4)
+        x_tile = x.repeat(self.num_sam,1,1,1,1).permute(1,0,2,3,4)
         J = - self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logvar)
-        J_low = self.elbo(recon_x, x_tile, Z, mu, logvar)
+        J_low = self.elbo(recon_x, x_tile, mu, logvar)
         return J, J_low
 
 
@@ -210,7 +211,6 @@ class DIWAE(nn.Module):
         else:
             x = self.dec_layer2(x)
             x = x.view(-1, 1, self.input_height, self.input_width)
-
         return x.view([N,T,-1,self.input_width, self.input_height])
 
     
@@ -225,8 +225,8 @@ class DIWAE(nn.Module):
             x = x.add_(eps)
 
         mu, logvar = self.encode(x)
-        mu  = mu.repeat(self.dim_sam,1,1).permute(1,0,2)
-        logvar = logvar.repeat(self.dim_sam,1,1).permute(1,0,2)
+        mu  = mu.repeat(self.num_sam,1,1).permute(1,0,2)
+        logvar = logvar.repeat(self.num_sam,1,1).permute(1,0,2)
 
         z = self.sample(mu, logvar)
         res = self.decode(z)
