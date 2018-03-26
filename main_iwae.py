@@ -161,7 +161,7 @@ def parse_args():
     parser.add_argument('--model_type', type=str, default='IWAE',
                         choices=['IWAE', 'DIWAE'],
                         help='The type of IWAE')#, required=True)
-    parser.add_argument('--dataset', type=str, default='mnist', choices=['mnist'],
+    parser.add_argument('--dataset', type=str, default='mnist', choices=['mnist', 'fmnist'],
                         help='The name of dataset')
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs to run')
     parser.add_argument('--batch_size', type=int, default=100, help='The size of batch')
@@ -175,7 +175,7 @@ def parse_args():
                         help="'conv' | 'fc'")
     parser.add_argument('--num_sam', type=float, default=5)
     parser.add_argument('--z_dim', type=float, default=64)
-    parser.add_argument('--lr', type=float, default=5e-5)
+    parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--beta1', type=float, default=0.9)
     parser.add_argument('--beta2', type=float, default=0.999)
     parser.add_argument('--clip', type=float, default=1.0)
@@ -227,18 +227,27 @@ def main():
     else:
         raise Exception("[!] There is no option for " + args.model_type)
 
-
     # load dataset
-    data_loader_tr = DataLoader(datasets.MNIST('data/mnist', train=True, download=True,
-                                                        transform=transforms.Compose(
-                                                            [transforms.ToTensor()])),
-                                            batch_size=args.batch_size, shuffle=False)
+    if args.dataset == 'mnist':
+        data_loader_tr = DataLoader(datasets.MNIST('data/mnist', train=True, download=True,
+                                                            transform=transforms.Compose(
+                                                                [transforms.ToTensor()])),
+                                                batch_size=args.batch_size, shuffle=False)
 
-    data_loader_vl = DataLoader(datasets.MNIST('data/mnist', train=True, download=True,
-                                                        transform=transforms.Compose(
-                                                            [transforms.ToTensor()])),
-                                            batch_size=args.batch_size, shuffle=False)
+        data_loader_vl = DataLoader(datasets.MNIST('data/mnist', train=False, download=True,
+                                                            transform=transforms.Compose(
+                                                                [transforms.ToTensor()])),
+                                                batch_size=args.batch_size, shuffle=False)
+    elif args.dataset == 'fmnist':
+        data_loader_tr = DataLoader(datasets.FashionMNIST('data/fashion-mnist', train=True, download=True,
+                                                            transform=transforms.Compose(
+                                                                [transforms.ToTensor()])),
+                                                batch_size=args.batch_size, shuffle=False)
 
+        data_loader_vl = DataLoader(datasets.FashionMNIST('data/fashion-mnist', train=False, download=True,
+                                                            transform=transforms.Compose(
+                                                                [transforms.ToTensor()])),
+                                                batch_size=args.batch_size, shuffle=False)
 
 
     # launch the graph in a session

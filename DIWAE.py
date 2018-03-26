@@ -108,13 +108,13 @@ class DIWAE(nn.Module):
         else:
 
             self.dec_layer1 = nn.Sequential(
-                nn.Linear(self.z_dim, self.z_dim*2),
-                nn.BatchNorm1d(self.z_dim*2),
+                nn.Linear(self.z_dim, self.z_dim*3),
+                nn.BatchNorm1d(self.z_dim*3),
                 nn.Tanh(),
             )
 
             self.dec_layer2 = nn.Sequential(
-                nn.Linear(self.z_dim*2, self.input_height * self.input_width),
+                nn.Linear(self.z_dim*3, self.input_height * self.input_width),
                 nn.Sigmoid(),
             )
 
@@ -145,21 +145,21 @@ class DIWAE(nn.Module):
         else:
 
             self.enc_layer1 = nn.Sequential(
-                nn.Linear(self.input_height*self.input_width, self.z_dim*2),
-                nn.BatchNorm1d(self.z_dim*2),
+                nn.Linear(self.input_height*self.input_width, self.z_dim*3),
+                nn.BatchNorm1d(self.z_dim*3),
                 nn.ReLU(),
-                nn.Linear(self.z_dim*2, self.z_dim*2),
-                nn.BatchNorm1d(self.z_dim*2),
+                nn.Linear(self.z_dim*3, self.z_dim*3),
+                nn.BatchNorm1d(self.z_dim*3),
                 nn.Tanh()
                 #nn.ReLU(),
             )
 
             self.mu_fc = nn.Sequential(
-                nn.Linear(self.z_dim*2, self.z_dim),
+                nn.Linear(self.z_dim*3, self.z_dim),
             )
     
             self.sigma_fc = nn.Sequential(
-                nn.Linear(self.z_dim*2, self.z_dim),
+                nn.Linear(self.z_dim*3, self.z_dim),
             )
 
     
