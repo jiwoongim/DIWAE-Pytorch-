@@ -55,8 +55,11 @@ class DIWAE(nn.Module):
         N, M, C, iw, ih = recon_x.shape
         recon_x = recon_x.view([N*M,C,iw,ih])
         BCE = self.reconstruction_function(recon_x, x) / (N*M)
-        KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
+        #KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
+        #KLD = torch.mean(torch.sum(KLD_element, dim=2).mul_(-0.5))
+        KLD_element = mu.pow(2).add_(logvar.mul_(2).exp()).mul_(-1).add_(1).add_(logvar.mul_(2))
         KLD = torch.mean(torch.sum(KLD_element, dim=2).mul_(-0.5))
+
 
         return BCE + KLD
 
