@@ -255,7 +255,7 @@ def main():
     print(" [*] Training finished!")
 
     # visualize learned generator
-    model.visualize_results(args.epoch)
+    #model.visualize_results(args.epoch)
     print(" [*] Testing finished!")
 
 
