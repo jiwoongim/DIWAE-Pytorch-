@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import utils 
 from DIWAE import DIWAE
-
+from tqdm import tqdm
 def train(model, args, data_loader_tr, data_loader_vl):
 
     if args.gpu_mode:
@@ -31,7 +31,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
     model.train()
     print('training start!!')
     start_time = time.time()
-    for epoch in range(args.epoch):
+    for epoch in tqdm(range(args.epoch)):
 
         epoch_start_time = time.time()
         for iter, (x_, y_) in enumerate(data_loader_tr):
