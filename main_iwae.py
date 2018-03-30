@@ -48,12 +48,12 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 optimizer.zero_grad()
 
                 recon_batch, mu, logvar, Z = model(x_)
-                loss, _ = model.loss_function(recon_batch, x_, Z, mu, logvar)
+                loss = model.loss_function(recon_batch, x_, Z, mu, logvar)
                 train_hist['tr_loss'].append(loss.data[0])
                 loss.backward()
-                                          
+                      
                 # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-                torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
+                #torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
                 optimizer.step()
 
         train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
@@ -68,9 +68,10 @@ def train(model, args, data_loader_tr, data_loader_vl):
                     x_ = Variable(x_.cuda())
                 else:
                     x_ = Variable(x_)
-
+                
                 recon_batch, mu, logvar, z = model(x_)
-                lle, elbo = model.loss_function(recon_batch, x_, z, mu, logvar)
+                lle = model.loss_function(recon_batch, x_, z, mu, logvar)
+                elbo = model.elbo(recon_batch[:,0], x_, mu, logvar)
                 train_hist['vl_loss'].append(loss.data[0])
 
 
@@ -80,7 +81,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
                             (iter + 1), \
                             len(data_loader_vl.dataset) // args.batch_size, \
                             train_hist['tr_loss'][-1],\
-                            lle.data[0],\
+                            train_hist['vl_loss'][-1],\
                             elbo.data[0]))
 
         if epoch % 25 :
@@ -173,8 +174,8 @@ def parse_args():
                         help='Directory name to save training logs')
     parser.add_argument('--arch_type', type=str, default='fc',\
                         help="'conv' | 'fc'")
-    parser.add_argument('--num_sam', type=float, default=5)
-    parser.add_argument('--z_dim', type=float, default=64)
+    parser.add_argument('--num_sam', type=float, default=10)
+    parser.add_argument('--z_dim', type=float, default=128)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--beta1', type=float, default=0.9)
     parser.add_argument('--beta2', type=float, default=0.999)

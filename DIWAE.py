@@ -52,14 +52,13 @@ class DIWAE(nn.Module):
 
     def elbo(self, recon_x, x, mu, logvar):
 
-        N, M, C, iw, ih = recon_x.shape
-        recon_x = recon_x.view([N*M,C,iw,ih])
-        BCE = self.reconstruction_function(recon_x, x) / (N*M)
+        N, C, iw, ih = recon_x.shape
+        BCE = self.reconstruction_function(recon_x, x) / float(N)
         #KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
-        #KLD = torch.mean(torch.sum(KLD_element, dim=2).mul_(-0.5))
-        KLD_element = mu.pow(2).add_(logvar.mul_(2).exp()).mul_(-1).add_(1).add_(logvar.mul_(2))
-        KLD = torch.mean(torch.sum(KLD_element, dim=2).mul_(-0.5))
-
+        #KLD_element = mu**2 - torch.exp(logvar) + 1 + logvar
+        #KLD_element = mu.pow(2).add_(logvar.mul_(2).exp()).mul_(-1).add_(1).add_(logvar.mul_(2))
+        KLD_element = (logvar * 2) - (torch.exp(logvar *2)) - mu**2  + 1 
+        KLD = - torch.mean(torch.sum(KLD_element * 0.5, dim=2))
 
         return BCE + KLD
 
@@ -84,8 +83,7 @@ class DIWAE(nn.Module):
         N, C, iw, ih = x.shape
         x_tile = x.repeat(self.num_sam,1,1,1,1).permute(1,0,2,3,4)
         J = - self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logvar)
-        J_low = self.elbo(recon_x, x_tile, mu, logvar)
-        return J, J_low
+        return J
 
 
     def decoder_init(self):
@@ -111,13 +109,14 @@ class DIWAE(nn.Module):
         else:
 
             self.dec_layer1 = nn.Sequential(
-                nn.Linear(self.z_dim, self.z_dim*4),
-                nn.BatchNorm1d(self.z_dim*4),
-                nn.Tanh(),
+                nn.Linear(self.z_dim, self.z_dim*5),
+                nn.BatchNorm1d(self.z_dim*5),
+                #nn.Tanh(),
+                nn.ReLU(),
             )
 
             self.dec_layer2 = nn.Sequential(
-                nn.Linear(self.z_dim*4, self.input_height * self.input_width),
+                nn.Linear(self.z_dim*5, self.input_height * self.input_width),
                 nn.Sigmoid(),
             )
 
@@ -148,21 +147,21 @@ class DIWAE(nn.Module):
         else:
 
             self.enc_layer1 = nn.Sequential(
-                nn.Linear(self.input_height*self.input_width, self.z_dim*4),
-                nn.BatchNorm1d(self.z_dim*4),
+                nn.Linear(self.input_height*self.input_width, self.z_dim*5),
+                nn.BatchNorm1d(self.z_dim*5),
                 nn.ReLU(),
-                nn.Linear(self.z_dim*4, self.z_dim*4),
-                nn.BatchNorm1d(self.z_dim*4),
+                nn.Linear(self.z_dim*5, self.z_dim*5),
+                nn.BatchNorm1d(self.z_dim*5),
                 nn.Tanh()
                 #nn.ReLU(),
             )
 
             self.mu_fc = nn.Sequential(
-                nn.Linear(self.z_dim*4, self.z_dim),
+                nn.Linear(self.z_dim*5, self.z_dim),
             )
     
             self.sigma_fc = nn.Sequential(
-                nn.Linear(self.z_dim*4, self.z_dim),
+                nn.Linear(self.z_dim*5, self.z_dim),
             )
 
     
