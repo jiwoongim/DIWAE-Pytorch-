@@ -50,25 +50,26 @@ class DIWAE(nn.Module):
             self.sample_z_ = Variable(torch.randn((self.batch_size, 1, self.z_dim)), volatile=True)
 
 
-    def elbo(self, recon_x, x, mu, logvar):
+    def elbo(self, recon_x, x, mu, logsig):
 
         N, C, iw, ih = recon_x.shape
         BCE = self.reconstruction_function(recon_x, x) / float(N)
-        #KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
-        #KLD_element = mu**2 - torch.exp(logvar) + 1 + logvar
-        #KLD_element = mu.pow(2).add_(logvar.mul_(2).exp()).mul_(-1).add_(1).add_(logvar.mul_(2))
-        KLD_element = (logvar * 2) - (torch.exp(logvar *2)) - mu**2  + 1 
+        #KLD_element = mu.pow(2).add_(logsig.exp()).mul_(-1).add_(1).add_(logsig)
+        KLD_element = (logsig*2 - mu**2 - torch.exp(logsig) + 1 )
+        #KLD_element = mu**2 - torch.exp(logsig) + 1 + logsig
+        #KLD_element = mu.pow(2).add_(logsig.mul_(2).exp()).mul_(-1).add_(1).add_(logsig.mul_(2))
+        #KLD_element = (logsig * 2) - (torch.exp(logsig *2)) - mu**2  + 1 
         KLD = - torch.mean(torch.sum(KLD_element * 0.5, dim=2))
 
         return BCE + KLD
 
 
-    def log_likelihood_estimate(self, recon_x, x_tile, Z, mu, logvar):
+    def log_likelihood_estimate(self, recon_x, x_tile, Z, mu, logsig):
 
         bce = x_tile * torch.log(recon_x) + (1. - x_tile) * torch.log(1 - recon_x)
         log_p_x_z   =  torch.sum(torch.sum(torch.sum(bce, dim=4), dim=3), dim=2)
 
-        log_q_z_x = log_likelihood_samples_mean_sigma(Z, mu, logvar, dim=2)
+        log_q_z_x = log_likelihood_samples_mean_sigma(Z, mu, logsig, dim=2)
         log_p_z   = prior_z(Z, dim=2)
 
         log_ws              = log_p_x_z - log_q_z_x + log_p_z
@@ -78,11 +79,11 @@ class DIWAE(nn.Module):
         return torch.mean(torch.squeeze(log_mean_exp(log_ws, dim=1)), dim=0)
 
 
-    def loss_function(self, recon_x, x, Z, mu, logvar):
+    def loss_function(self, recon_x, x, Z, mu, logsig):
 
         N, C, iw, ih = x.shape
         x_tile = x.repeat(self.num_sam,1,1,1,1).permute(1,0,2,3,4)
-        J = - self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logvar)
+        J = - self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logsig)
         return J
 
 
@@ -109,14 +110,14 @@ class DIWAE(nn.Module):
         else:
 
             self.dec_layer1 = nn.Sequential(
-                nn.Linear(self.z_dim, self.z_dim*5),
-                nn.BatchNorm1d(self.z_dim*5),
+                nn.Linear(self.z_dim, self.z_dim*4),
+                nn.BatchNorm1d(self.z_dim*4),
                 #nn.Tanh(),
                 nn.ReLU(),
             )
 
             self.dec_layer2 = nn.Sequential(
-                nn.Linear(self.z_dim*5, self.input_height * self.input_width),
+                nn.Linear(self.z_dim*4, self.input_height * self.input_width),
                 nn.Sigmoid(),
             )
 
@@ -147,21 +148,20 @@ class DIWAE(nn.Module):
         else:
 
             self.enc_layer1 = nn.Sequential(
-                nn.Linear(self.input_height*self.input_width, self.z_dim*5),
-                nn.BatchNorm1d(self.z_dim*5),
-                nn.ReLU(),
-                nn.Linear(self.z_dim*5, self.z_dim*5),
-                nn.BatchNorm1d(self.z_dim*5),
+                nn.Linear(self.input_height*self.input_width, self.z_dim*4),
+                nn.BatchNorm1d(self.z_dim*4),
+                nn.LeakyReLU(0.2),
+                nn.Linear(self.z_dim*4, self.z_dim*2),
+                nn.BatchNorm1d(self.z_dim*2),
                 nn.Tanh()
-                #nn.ReLU(),
             )
 
             self.mu_fc = nn.Sequential(
-                nn.Linear(self.z_dim*5, self.z_dim),
+                nn.Linear(self.z_dim*2, self.z_dim),
             )
     
             self.sigma_fc = nn.Sequential(
-                nn.Linear(self.z_dim*5, self.z_dim),
+                nn.Linear(self.z_dim*2, self.z_dim),
             )
 
     
@@ -183,9 +183,9 @@ class DIWAE(nn.Module):
         return mean, sigma
 
 
-    def sample(self, mu, logvar):
+    def sample(self, mu, logsig):
 
-        std = torch.exp(logvar)
+        std = torch.exp(logsig*0.5)
         if self.gpu_mode :
             eps = torch.cuda.FloatTensor(std.size()).normal_()
         else:
@@ -197,8 +197,8 @@ class DIWAE(nn.Module):
 
     def get_latent_sample(self, x):
 
-        mu, logvar = self.encode(x)
-        z = self.sample(mu, logvar)
+        mu, logsig = self.encode(x)
+        z = self.sample(mu, logsig)
         return z
 
 
@@ -226,12 +226,12 @@ class DIWAE(nn.Module):
             eps = Variable(eps) # requires_grad=False
             x = x.add_(eps)
 
-        mu, logvar = self.encode(x)
+        mu, logsig = self.encode(x)
         mu  = mu.repeat(self.num_sam,1,1).permute(1,0,2)
-        logvar = logvar.repeat(self.num_sam,1,1).permute(1,0,2)
+        logsig = logsig.repeat(self.num_sam,1,1).permute(1,0,2)
 
-        z = self.sample(mu, logvar)
+        z = self.sample(mu, logsig)
         res = self.decode(z)
-        return res, mu, logvar, z
+        return res, mu, logsig, z
 
 

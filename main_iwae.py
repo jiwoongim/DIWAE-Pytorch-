@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import utils 
 from DIWAE import DIWAE
-from tqdm import tqdm
+
 def train(model, args, data_loader_tr, data_loader_vl):
 
     if args.gpu_mode:
@@ -31,7 +31,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
     model.train()
     print('training start!!')
     start_time = time.time()
-    for epoch in tqdm(range(args.epoch)):
+    for epoch in range(args.epoch):
 
         epoch_start_time = time.time()
         for iter, (x_, y_) in enumerate(data_loader_tr):
@@ -53,7 +53,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 loss.backward()
                       
                 # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-                #torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
+                torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
                 optimizer.step()
 
         train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
@@ -68,7 +68,9 @@ def train(model, args, data_loader_tr, data_loader_vl):
                     x_ = Variable(x_.cuda())
                 else:
                     x_ = Variable(x_)
-                
+               
+                #if epoch == 46:
+                #    import pdb; pdb.set_trace()
                 recon_batch, mu, logvar, z = model(x_)
                 lle = model.loss_function(recon_batch, x_, z, mu, logvar)
                 elbo = model.elbo(recon_batch[:,0], x_, mu, logvar)
