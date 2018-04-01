@@ -74,7 +74,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 recon_batch, mu, logvar, z = model(x_)
                 lle = model.loss_function(recon_batch, x_, z, mu, logvar)
                 elbo = model.elbo(recon_batch[:,0], x_, mu, logvar)
-                train_hist['vl_loss'].append(loss.data[0])
+                train_hist['vl_loss'].append(lle.data[0])
 
 
                 if ((iter + 1) % 100) == 0:
