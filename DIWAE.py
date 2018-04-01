@@ -55,7 +55,7 @@ class DIWAE(nn.Module):
         N, C, iw, ih = recon_x.shape
         BCE = self.reconstruction_function(recon_x, x) / float(N)
         #KLD_element = mu.pow(2).add_(logsig.exp()).mul_(-1).add_(1).add_(logsig)
-        KLD_element = (logsig*2 - mu**2 - torch.exp(logsig) + 1 )
+        KLD_element = (logsig - mu**2 - torch.exp(logsig) + 1 )
         #KLD_element = mu**2 - torch.exp(logsig) + 1 + logsig
         #KLD_element = mu.pow(2).add_(logsig.mul_(2).exp()).mul_(-1).add_(1).add_(logsig.mul_(2))
         #KLD_element = (logsig * 2) - (torch.exp(logsig *2)) - mu**2  + 1 
@@ -112,8 +112,8 @@ class DIWAE(nn.Module):
             self.dec_layer1 = nn.Sequential(
                 nn.Linear(self.z_dim, self.z_dim*4),
                 nn.BatchNorm1d(self.z_dim*4),
-                #nn.Tanh(),
-                nn.ReLU(),
+                nn.Tanh(),
+                #nn.ReLU(),
             )
 
             self.dec_layer2 = nn.Sequential(
@@ -149,10 +149,10 @@ class DIWAE(nn.Module):
 
             self.enc_layer1 = nn.Sequential(
                 nn.Linear(self.input_height*self.input_width, self.z_dim*4),
-                nn.BatchNorm1d(self.z_dim*4),
-                nn.LeakyReLU(0.2),
+                #nn.BatchNorm1d(self.z_dim*4),
+                nn.Tanh(),
                 nn.Linear(self.z_dim*4, self.z_dim*2),
-                nn.BatchNorm1d(self.z_dim*2),
+                #nn.BatchNorm1d(self.z_dim*2),
                 nn.Tanh()
             )
 
@@ -185,6 +185,7 @@ class DIWAE(nn.Module):
 
     def sample(self, mu, logsig):
 
+        #std = torch.exp(logsig*0.5)
         std = torch.exp(logsig*0.5)
         if self.gpu_mode :
             eps = torch.cuda.FloatTensor(std.size()).normal_()

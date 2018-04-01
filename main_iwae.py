@@ -69,12 +69,11 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 else:
                     x_ = Variable(x_)
                
-                #if epoch == 46:
-                #    import pdb; pdb.set_trace()
+
                 recon_batch, mu, logvar, z = model(x_)
                 lle = model.loss_function(recon_batch, x_, z, mu, logvar)
                 elbo = model.elbo(recon_batch[:,0], x_, mu, logvar)
-                train_hist['vl_loss'].append(loss.data[0])
+                train_hist['vl_loss'].append(lle.data[0])
 
 
                 if ((iter + 1) % 100) == 0:
@@ -181,7 +180,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--beta1', type=float, default=0.9)
     parser.add_argument('--beta2', type=float, default=0.999)
-    parser.add_argument('--clip', type=float, default=1.0)
+    parser.add_argument('--clip', type=float, default=5.0)
     parser.add_argument('--gpu_mode', type=bool, default=True)
 
     return check_args(parser.parse_args())
