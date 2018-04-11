@@ -81,7 +81,7 @@ class DIWAE(nn.Module):
 
     def loss_function(self, recon_x, x, Z, mu, logsig):
 
-        N, C, iw, ih = x.shape
+        N, C, iw, ih = x.size()
         x_tile = x.repeat(self.num_sam,1,1,1,1).permute(1,0,2,3,4)
         J = - self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logsig)
         return J
@@ -221,9 +221,9 @@ class DIWAE(nn.Module):
 
         if self.model_name == 'DIWAE' and not testF:
             if self.gpu_mode:
-                eps = torch.cuda.FloatTensor(x.size()).normal_(std=0.05)
+                eps = torch.randn(x.size()).cuda() * 0.05
             else:
-                eps = torch.FloatTensor(x.size()).normal_(std=0.05)
+                eps = torch.randn(x.size()) * 0.05
             eps = Variable(eps) # requires_grad=False
             x = x.add_(eps)
 
