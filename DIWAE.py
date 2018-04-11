@@ -217,9 +217,9 @@ class DIWAE(nn.Module):
         return x.view([N,T,-1,self.input_width, self.input_height])
 
     
-    def forward(self, x):
+    def forward(self, x, testF=False):
 
-        if self.model_name == 'DIWAE':
+        if self.model_name == 'DIWAE' and not testF:
             if self.gpu_mode:
                 eps = torch.cuda.FloatTensor(x.size()).normal_(std=0.05)
             else:
