@@ -221,9 +221,9 @@ class DIWAE(nn.Module):
 
         if self.model_name == 'DIWAE':
             if self.gpu_mode:
-                eps = torch.randn((x.size()).cuda() * 0.05
+                eps = torch.randn(x.size()).cuda() * 0.05
             else:
-                eps = torch.randn((x.size()) * 0.05
+                eps = torch.randn(x.size()) * 0.05
             eps = Variable(eps) # requires_grad=False
             x = x.add_(eps)
 
