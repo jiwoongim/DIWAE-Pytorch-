@@ -13,24 +13,15 @@ torch.manual_seed(1)
 torch.cuda.manual_seed_all(1)
 
 
-def uploadG(critic_type, dataset):
-
-    if critic_type == 'LSGAN':
-        from LSGAN import generator
-    else:
-        from GAN import generator
-    return generator(dataset)
-
-
 def log_likelihood_samples_mean_sigma(samples, mean, logvar, dim):
 
-    constant = torch.log(torch.FloatTensor(np.asarray([np.pi]))*2)
-    return constant[0] * samples.shape[dim] * 0.5  - \
+    constant = - torch.log(torch.FloatTensor(np.asarray([np.pi]))*2)
+    return constant[0] * samples.shape[dim] * 0.5  -\
                torch.sum(((samples-mean)/torch.exp(logvar*0.5))**2 + logvar, dim=dim) * 0.5
 
 def prior_z(samples, dim):
 
-    constant = torch.log(torch.FloatTensor(np.asarray([np.pi]))*2)
+    constant = - torch.log(torch.FloatTensor(np.asarray([np.pi]))*2)
     return constant[0]*samples.shape[dim] * 0.5 - torch.sum(samples**2, dim=dim) * 0.5
 
 

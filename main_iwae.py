@@ -165,7 +165,7 @@ def parse_args():
                         help='The type of IWAE')#, required=True)
     parser.add_argument('--dataset', type=str, default='mnist', choices=['mnist', 'fmnist'],
                         help='The name of dataset')
-    parser.add_argument('--epoch', type=int, default=200, help='The number of epochs to run')
+    parser.add_argument('--epoch', type=int, default=500, help='The number of epochs to run')
     parser.add_argument('--batch_size', type=int, default=100, help='The size of batch')
     parser.add_argument('--save_dir', type=str, default='models',
                         help='Directory name to save the model')
