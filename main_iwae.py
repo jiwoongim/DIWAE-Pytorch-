@@ -48,8 +48,8 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 optimizer.zero_grad()
 
                 recon_batch, mu, logvar, Z = model(x_)
-                loss = model.loss_function(recon_batch, x_, Z, mu, logvar)
-                train_hist['tr_loss'].append(loss.data[0])
+                lle, loss = model.loss_function(recon_batch, x_, Z, mu, logvar)
+                train_hist['tr_loss'].append(lle.data[0])
                 loss.backward()
                       
                 # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
@@ -70,7 +70,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
                     x_ = Variable(x_)
                
                 recon_batch, mu, logvar, z = model(x_, testF=True)
-                lle = model.loss_function(recon_batch, x_, z, mu, logvar)
+                lle, _ = model.loss_function(recon_batch, x_, z, mu, logvar)
                 elbo = model.elbo(recon_batch[:,0], x_, mu, logvar)
                 train_hist['vl_loss'].append(lle.data[0])
 

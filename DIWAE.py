@@ -73,21 +73,26 @@ class DIWAE(nn.Module):
         log_p_z   = prior_z(Z, dim=2)
 
         log_ws              = log_p_x_z - log_q_z_x + log_p_z
-        #log_ws_minus_max    = log_ws - torch.max(log_ws, dim=1, keepdim=True)[0]
-        #ws                  = torch.exp(log_ws_minus_max)
-        #normalized_ws       = ws / torch.sum(ws, dim=1, keepdim=True)
-        return torch.mean(torch.squeeze(log_mean_exp(log_ws, dim=1)), dim=0)
+        log_ws_minus_max    = log_ws - torch.max(log_ws, dim=1, keepdim=True)[0]
+
+        ws                  = torch.exp(log_ws_minus_max)
+        normalized_ws       = ws / torch.sum(ws, dim=1, keepdim=True)
+        loss = torch.sum(torch.matmul(normalized_ws.transpose(1,0), log_mean_exp(log_ws, dim=1)))
+        lle = torch.mean(torch.squeeze(log_mean_exp(log_ws, dim=1)), dim=0)
+
+        return -lle, -loss
 
 
     def loss_function(self, recon_x, x, Z, mu, logsig):
 
-        N, C, iw, ih = x.size()
+        N, C, iw, ih = x.shape
         x_tile = x.repeat(self.num_sam,1,1,1,1).permute(1,0,2,3,4)
-        J = - self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logsig)
+        J = self.log_likelihood_estimate(recon_x, x_tile, Z, mu, logsig)
         return J
 
 
     def decoder_init(self):
+
         # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
         self.input_height = 28
         self.input_width = 28
@@ -157,11 +162,11 @@ class DIWAE(nn.Module):
             )
 
             self.mu_fc = nn.Sequential(
-                nn.Linear(self.z_dim*2, self.z_dim),
+                nn.Linear(self.z_dim*4, self.z_dim),
             )
     
             self.sigma_fc = nn.Sequential(
-                nn.Linear(self.z_dim*2, self.z_dim),
+                nn.Linear(self.z_dim*4, self.z_dim),
             )
 
     
@@ -221,9 +226,9 @@ class DIWAE(nn.Module):
 
         if self.model_name == 'DIWAE' and not testF:
             if self.gpu_mode:
-                eps = torch.randn(x.size()).cuda() * 0.05
+                eps = torch.cuda.FloatTensor(x.size()).normal_(std=0.05)
             else:
-                eps = torch.randn(x.size()) * 0.05
+                eps = torch.FloatTensor(x.size()).normal_(std=0.05)
             eps = Variable(eps) # requires_grad=False
             x = x.add_(eps)
 
