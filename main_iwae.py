@@ -33,6 +33,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
     start_time = time.time()
     for epoch in range(args.epoch):
 
+        model.train()
         epoch_start_time = time.time()
         for iter, (x_, y_) in enumerate(data_loader_tr):
             if iter * args.batch_size < 50000:
@@ -50,7 +51,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
                 recon_batch, mu, logvar, Z = model(x_)
                 lle, loss = model.loss_function(recon_batch, x_, Z, mu, logvar)
                 train_hist['tr_loss'].append(lle.data[0])
-                loss.backward()
+                lle.backward()
                       
                 # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
                 torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
@@ -59,6 +60,7 @@ def train(model, args, data_loader_tr, data_loader_vl):
         train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
         visualize_results(model, epoch+1, args)
 
+        model.eval()
         for iter, (x_, y_) in enumerate(data_loader_vl):
             if iter * args.batch_size <= 10000:
                 if iter == data_loader_vl.dataset.__len__() // args.batch_size:
@@ -176,7 +178,7 @@ def parse_args():
                         help="'conv' | 'fc'")
     parser.add_argument('--num_sam', type=float, default=5)
     parser.add_argument('--z_dim', type=float, default=128)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--beta1', type=float, default=0.9)
     parser.add_argument('--beta2', type=float, default=0.999)
     parser.add_argument('--clip', type=float, default=5.0)

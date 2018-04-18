@@ -196,9 +196,9 @@ class DIWAE(nn.Module):
         #std = torch.exp(logsig*0.5)
         std = torch.exp(logsig*0.5)
         if self.gpu_mode :
-            eps = torch.cuda.FloatTensor(std.size()).normal_()
+            eps = torch.randn(std.size()).cuda()
         else:
-            eps = torch.FloatTensor(std.size()).normal_()
+            eps = torch.randn(std.size())
         eps = Variable(eps)
 
         return eps.mul(std).add_(mu)
@@ -229,9 +229,9 @@ class DIWAE(nn.Module):
 
         if self.model_name == 'DIWAE' and not testF:
             if self.gpu_mode:
-                eps = torch.cuda.FloatTensor(x.size()).normal_(std=0.05)
+                eps = torch.randn(x.size()).cuda() * 0.05
             else:
-                eps = torch.FloatTensor(x.size()).normal_(std=0.05)
+                eps = torch.randn(x.size()).cuda()
             eps = Variable(eps) # requires_grad=False
             x = x.add_(eps)
 
